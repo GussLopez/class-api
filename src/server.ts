@@ -1,7 +1,13 @@
-import express from 'express'
+import express from "express";
+import userRouter from "./routes/userRouter";
+import cors from "cors";
+import { corsConfig } from "./config/cors";
 
-const app = express()
+const app = express();
 
 app.use(express.json());
+app.use(cors(corsConfig));
 
-export default app
+app.use("/api/user", userRouter);
+
+export default app;
