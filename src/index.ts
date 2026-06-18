@@ -1,3 +1,4 @@
+import "dotenv/config";
 import server from './server'
 import colors from 'colors'
 
