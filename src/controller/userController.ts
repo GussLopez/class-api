@@ -4,10 +4,9 @@ import { supabase } from "../config/supabase";
 export class User {
   static getUser = async (req: Request, res: Response) => {
     try {
-      console.log(req.user);
 
       const { id } = req.params;
-
+      console.log(id);
       if (!id) {
         res.status(400).json({ error: "Id inválido" });
         return;
@@ -20,6 +19,7 @@ export class User {
         .single();
 
       if (error) {
+        console.log(error);
         res.status(500).json({
           error: error.message,
         });
