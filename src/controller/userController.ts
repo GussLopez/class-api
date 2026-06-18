@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { createClient } from "@supabase/supabase-js";
 import { supabase } from "../config/supabase";
 
 export class User {
