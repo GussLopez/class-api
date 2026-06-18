@@ -10,7 +10,7 @@ export const authMiddleware = async (
     const authHeader = req.headers.authorization;
 
     if (!authHeader?.startsWith("Bearer ")) {
-      res.status(401).json({
+      return res.status(401).json({
         error: "Token no proporcionado",
       });
     }
@@ -23,16 +23,16 @@ export const authMiddleware = async (
     } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      res.status(401).json({
+      return res.status(401).json({
         error: "Token inválido",
       });
     }
 
-    req.user = user;
+    (req as any).user = user;
 
-    next();
+    return next();
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       error: "Error al validar la autenticación",
     });
   }
