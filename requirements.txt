@@ -11,3 +11,4 @@ pymupdf
 langchain-text-splitters
 python-multipart
 sentence-transformers
+requests
