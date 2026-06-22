@@ -17,6 +17,9 @@ from app.schemas.rag import AskRequest
 from app.schemas.rag import AskRequest
 from app.services.llm_service import generate_answer_with_ollama
 
+from app.core.auth import get_current_profile
+from app.models.profile import Profile
+
 router = APIRouter(
     prefix="/rag",
     tags=["RAG"]
@@ -33,11 +36,10 @@ def health():
 @router.post("/upload")
 async def upload_pdf(
     file: UploadFile = File(...),
-    tenant_id: UUID = Form(...),
-    user_id: UUID = Form(...),
     title: str = Form(...),
     room_id: Optional[UUID] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_profile: Profile = Depends(get_current_profile)
 ):
     if file.content_type != "application/pdf":
         raise HTTPException(
@@ -83,8 +85,8 @@ async def upload_pdf(
             )
 
         document = Document(
-            tenant_id=tenant_id,
-            user_id=user_id,
+            tenant_id=current_profile.tenant_id,
+            user_id=current_profile.id,
             room_id=room_id,
             title=title,
             file_name=file.filename,
@@ -149,7 +151,8 @@ async def upload_pdf(
 @router.post("/ask")
 def ask_document(
     body: AskRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_profile: Profile = Depends(get_current_profile)
 ):
     question_embedding = generate_embedding(body.question)
 
@@ -176,7 +179,7 @@ def ask_document(
         {
             "embedding": embedding_str,
             "document_id": str(body.document_id),
-            "user_id": str(body.user_id)
+            "user_id": str(current_profile.id)
         }
     ).mappings().all()
 
