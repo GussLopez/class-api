@@ -3,12 +3,11 @@ from pydantic import BaseModel, Field
 
 
 class AskRequest(BaseModel):
-    document_id: UUID
-    user_id: UUID
-    question: str = Field(
-        min_length=3,
-        max_length=1000
-    )
+  document_id: UUID
+  question: str = Field(
+      min_length=3,
+      max_length=1000
+  )
 
 
 class SourceChunk(BaseModel):
