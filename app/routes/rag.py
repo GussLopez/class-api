@@ -215,3 +215,55 @@ def ask_document(
         "answer": answer,
         "sources": sources
     }
+
+    @router.delete("/{document_id}")
+    def delete_document(
+        document_id: UUID,
+        db: Session = Depends(get_db),
+        current_profile: Profile = Depends(get_current_profile)
+    ):
+        document = (
+            db.query(Document)
+            .filter(
+                Document.id == document_id,
+                Document.user_id == current_profile.id
+            )
+            .first()
+        )
+
+        if document is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Documento no encontrado."
+            )
+
+        try:
+            db.query(DocumentChunk).filter(
+                DocumentChunk.document_id == document.id
+            ).delete(synchronize_session=False)
+
+            db.execute(
+                text("""
+                    DELETE FROM study_sessions
+                    WHERE document_id = :document_id
+                """),
+                {
+                    "document_id": str(document.id)
+                }
+            )
+
+            db.delete(document)
+            db.commit()
+
+            return {
+                "message": "Documento eliminado correctamente.",
+                "document_id": str(document_id)
+            }
+
+        except Exception as error:
+            db.rollback()
+
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error eliminando el documento: {str(error)}"
+            )
