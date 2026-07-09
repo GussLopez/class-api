@@ -61,9 +61,9 @@ def extract_json_array(text: str):
     return json.loads(match.group(0))
 
 
-def generate_flashcards_with_ollama(
+def generate_infographic_cards_with_ollama(
     context: str,
-    total: int = 10
+    total: int = 6
 ):
     payload = {
         "model": OLLAMA_MODEL,
@@ -72,33 +72,43 @@ def generate_flashcards_with_ollama(
             {
                 "role": "system",
                 "content": """
-Eres un asistente académico experto en crear flashcards.
+                    Eres un asistente académico experto en crear infografías educativas.
 
-Genera flashcards únicamente con la información del contexto.
-No inventes información.
+                    Tu tarea es convertir el contenido del documento en tarjetas informativas tipo infografía.
 
-Devuelve exclusivamente un JSON válido.
-No agregues texto antes ni después.
+                    No hagas preguntas.
+                    No generes formato de flashcards pregunta/respuesta.
+                    No inventes información.
+                    Usa únicamente la información del contexto.
 
-Formato exacto:
+                    Devuelve exclusivamente un JSON válido.
+                    No agregues texto antes ni después.
 
-[
-  {
-    "question": "Pregunta clara y breve",
-    "answer": "Respuesta clara y útil"
-  }
-]
-"""
+                    Formato exacto:
+
+                    [
+                    {
+                        "title": "Título corto del concepto",
+                        "description": "Explicación breve y clara del concepto.",
+                        "points": [
+                        "Punto clave 1",
+                        "Punto clave 2",
+                        "Punto clave 3"
+                        ]
+                    }
+                    ]
+            """
             },
             {
                 "role": "user",
                 "content": f"""
-Contexto del documento:
+                Contexto del documento:
 
-{context}
+                {context}
 
-Genera {total} flashcards para estudiar este documento.
-"""
+                Genera {total} tarjetas informativas tipo infografía.
+                Cada tarjeta debe resumir un concepto importante del documento.
+            """
             }
         ]
     }
@@ -114,21 +124,32 @@ Genera {total} flashcards para estudiar este documento.
     data = response.json()
     raw_content = data["message"]["content"]
 
-    flashcards = extract_json_array(raw_content)
+    cards = extract_json_array(raw_content)
 
-    clean_flashcards = []
+    clean_cards = []
 
-    for item in flashcards:
-        question = str(item.get("question", "")).strip()
-        answer = str(item.get("answer", "")).strip()
+    for item in cards:
+        title = str(item.get("title", "")).strip()
+        description = str(item.get("description", "")).strip()
+        points = item.get("points", [])
 
-        if question and answer:
-            clean_flashcards.append({
-                "question": question,
-                "answer": answer
+        if not isinstance(points, list):
+            points = []
+
+        clean_points = [
+            str(point).strip()
+            for point in points
+            if str(point).strip()
+        ]
+
+        if title and description and len(clean_points) >= 2:
+            clean_cards.append({
+                "title": title,
+                "description": description,
+                "points": clean_points
             })
 
-    if len(clean_flashcards) == 0:
-        raise ValueError("No se pudieron generar flashcards válidas.")
+    if len(clean_cards) == 0:
+        raise ValueError("No se pudieron generar tarjetas informativas válidas.")
 
-    return clean_flashcards
+    return clean_cards
