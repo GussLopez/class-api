@@ -8,7 +8,7 @@ from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
 from app.models.study_session import StudySession
 from app.schemas.flashcard import GenerateFlashcardsRequest
-from app.services.llm_service import generate_flashcards_with_ollama
+from app.services.llm_service import generate_infographic_cards_with_ollama
 
 
 router = APIRouter(
@@ -61,11 +61,10 @@ def generate_flashcards(
     )
 
     try:
-        flashcards = generate_flashcards_with_ollama(
+        cards = generate_infographic_cards_with_ollama(
             context=context,
             total=body.total
         )
-
         session = StudySession(
             user_id=current_profile.id,
             document_id=document.id,
@@ -73,7 +72,7 @@ def generate_flashcards(
             content={
                 "document_id": str(document.id),
                 "document_title": document.title,
-                "flashcards": flashcards
+                "cards": cards
             }
         )
 
@@ -84,7 +83,7 @@ def generate_flashcards(
         return {
             "session_id": str(session.id),
             "document_id": str(document.id),
-            "flashcards": flashcards
+            "cards": cards
         }
 
     except Exception as error:
