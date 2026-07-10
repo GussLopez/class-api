@@ -33,6 +33,9 @@ def health():
     }
 
 
+MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB
+
+
 @router.post("/upload")
 async def upload_pdf(
     file: UploadFile = File(...),
@@ -51,11 +54,25 @@ async def upload_pdf(
     document = None
 
     try:
+        content = await file.read()
+        file_size_bytes = len(content)
+
+        if file_size_bytes == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="El archivo está vacío."
+            )
+
+        if file_size_bytes > MAX_FILE_SIZE_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail="El archivo supera el límite permitido de 20 MB."
+            )
+
         with tempfile.NamedTemporaryFile(
             delete=False,
             suffix=".pdf"
         ) as temp_file:
-            content = await file.read()
             temp_file.write(content)
             temp_path = temp_file.name
 
@@ -78,10 +95,13 @@ async def upload_pdf(
                         "content": chunk
                     })
 
-        if len(all_chunks) == 0:
+        if not all_chunks:
             raise HTTPException(
                 status_code=400,
-                detail="No se pudo extraer texto del PDF. Puede ser un PDF escaneado o vacío."
+                detail=(
+                    "No se pudo extraer texto del PDF. "
+                    "Puede ser un PDF escaneado o vacío."
+                )
             )
 
         document = Document(
@@ -89,9 +109,10 @@ async def upload_pdf(
             user_id=current_profile.id,
             room_id=room_id,
             title=title,
-            file_name=file.filename,
+            file_name=file.filename or "documento.pdf",
             file_url=f"local://{file.filename}",
             file_type=file.content_type,
+            file_size_bytes=file_size_bytes,
             status="processing"
         )
 
@@ -121,6 +142,7 @@ async def upload_pdf(
             "document_id": str(document.id),
             "pages": len(pages),
             "chunks": len(all_chunks),
+            "file_size_bytes": document.file_size_bytes,
             "status": document.status
         }
 
@@ -145,6 +167,8 @@ async def upload_pdf(
         )
 
     finally:
+        await file.close()
+
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
