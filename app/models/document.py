@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, text
+from sqlalchemy import Column, String, Text, DateTime, BigInteger, text
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.models.base import Base
@@ -17,6 +17,8 @@ class Document(Base):
     file_name = Column(String, nullable=False)
     file_url = Column(Text, nullable=False)
     file_type = Column(String, nullable=True)
+
+    file_size_bytes = Column(BigInteger, nullable=True)
 
     status = Column(String, nullable=False, server_default=text("'processing'"))
     created_at = Column(DateTime(timezone=True), server_default=text("now()"))
