@@ -19,28 +19,44 @@ router = APIRouter(
 
 @router.get("/")
 def get_documents(
-  db: Session = Depends(get_db),
-  current_profile: Profile = Depends(get_current_profile)
+    db: Session = Depends(get_db),
+    current_profile: Profile = Depends(get_current_profile)
 ):
-  documents = (
-    db.query(Document)
-    .filter(Document.user_id == current_profile.id)
-    .order_by(Document.created_at.desc())
-    .all()
-  )
+    results = (
+        db.query(Document, Profile)
+        .join(
+            Profile,
+            Profile.id == Document.user_id
+        )
+        .filter(
+            Document.tenant_id == current_profile.tenant_id
+        )
+        .order_by(Document.created_at.desc())
+        .all()
+    )
 
-  return [
-    {
-      "id": str(document.id),
-      "title": document.title,
-      "file_name": document.file_name,
-      "file_url": document.file_url,
-      "file_type": document.file_type,
-      "status": document.status,
-      "created_at": document.created_at
-    }
-    for document in documents
-  ]
+    return [
+        {
+            "id": str(document.id),
+            "title": document.title,
+            "file_name": document.file_name,
+            "file_url": document.file_url,
+            "file_type": document.file_type,
+            "file_size_bytes": document.file_size_bytes,
+            "status": document.status,
+            "created_at": document.created_at,
+            "user": {
+                "id": str(user.id),
+                "name": user.name,
+                "last_name": user.last_name,
+                "full_name": " ".join(
+                    filter(None, [user.name, user.last_name])
+                ),
+                "email": user.email
+            }
+        }
+        for document, user in results
+    ]
 
 @router.get("/{document_id}")
 def get_document_by_id(
